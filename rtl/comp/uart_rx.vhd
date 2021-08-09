@@ -31,6 +31,32 @@ end entity;
 
 architecture RTL of UART_RX is
 
+    component UART_CLK_DIV is
+        Generic (
+            DIV_MAX_VAL  : integer := 16;
+            DIV_MARK_POS : integer := 1
+        );
+        Port (
+            CLK      : in  std_logic; -- system clock
+            RST      : in  std_logic; -- high active synchronous reset
+            -- USER INTERFACE
+            CLEAR    : in  std_logic; -- clock divider counter clear
+            ENABLE   : in  std_logic; -- clock divider counter enable
+            DIV_MARK : out std_logic  -- output divider mark (divided clock enable)
+        );
+    end component UART_CLK_DIV;
+    
+    component UART_PARITY is
+        Generic (
+            DATA_WIDTH  : integer := 8;
+            PARITY_TYPE : string  := "none" -- legal values: "none", "even", "odd", "mark", "space"
+        );
+        Port (
+            DATA_IN     : in  std_logic_vector(DATA_WIDTH-1 downto 0);
+            PARITY_OUT  : out std_logic
+        );
+    end component UART_PARITY;
+
     signal rx_clk_en          : std_logic;
     signal rx_data            : std_logic_vector(7 downto 0);
     signal rx_bit_count       : unsigned(2 downto 0);
@@ -52,7 +78,7 @@ begin
     -- UART RECEIVER CLOCK DIVIDER AND CLOCK ENABLE FLAG
     -- -------------------------------------------------------------------------
 
-    rx_clk_divider_i : entity work.UART_CLK_DIV
+    rx_clk_divider_i : UART_CLK_DIV
     generic map(
         DIV_MAX_VAL  => CLK_DIV_VAL,
         DIV_MARK_POS => 3
@@ -104,7 +130,7 @@ begin
     -- -------------------------------------------------------------------------
 
     uart_rx_parity_g : if (PARITY_BIT /= "none") generate
-        uart_rx_parity_gen_i: entity work.UART_PARITY
+        uart_rx_parity_gen_i: UART_PARITY
         generic map (
             DATA_WIDTH  => 8,
             PARITY_TYPE => PARITY_BIT
